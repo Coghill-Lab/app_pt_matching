@@ -6,7 +6,7 @@ version_id <- paste0("v0.0.9")
 
 Known_HIVNEG_File <- "data/TCC_Screening_KnownHIVNegatives_20241212.csv"
 
-source("module_screening_processing.R")
+
 
 
 # UI ---------------------------------------------------------------------------
@@ -18,13 +18,13 @@ ui <-
                     tags$head(
                       tags$link(rel = "stylesheet", type = "text/css", href = "styling.css")
                     ),
-
+                    
                     ## Homepage ------------------------------------------------
                     #shiny::tabPanel("Homepage",
                     #                 icon = icon("home")
                     #                # Explain SMART acronym what it can be used for - any logos
                     #),
-
+                    
                     ## Screening -----------------------------------------------
                     shiny::tabPanel("Screening",
                                     icon = icon("search",lib = "font-awesome"),
@@ -34,7 +34,6 @@ ui <-
                                         h4("Load Input Data"),
                                         shiny::fileInput("screening_file_upload","Upload Screening Data"),
                                         shiny::fileInput("known_neg_file_upload","Upload Known HIV Negatives", placeholder = "Optional"),
-                                        shiny::fileInput("redcap_file_upload", "Upload REDCap Data"), # add redcap eligibility
                                         conditionalPanel(condition = "input.screening_panel == '1'",
                                                          hr(),
                                                          h4("Filter Patients"),
@@ -47,15 +46,13 @@ ui <-
                                                          ),
                                                          selectizeInput("mrn_column","MRN Column:", choices = NULL, selected = 1),
                                                          selectizeInput("hiv_present_column","HIV Indicator Column:", choices = NULL, selected = 1),
-                                                         ),
+                                        ),
                                         conditionalPanel(condition = "input.screening_panel == '2'",
                                                          p(),
                                                          selectizeInput("screen_visit_type", "Visit Types:", choices = NULL, selected = NULL, multiple = TRUE),
                                                          shinyWidgets::airDatepickerInput("screen_visit_date_range", label = "Select Visit Date Range:", 
                                                                                           range = TRUE, clearButton = TRUE),
-                                                         verbatimTextOutput("checked_rows")),
-                                        hr(),
-                                        downloadButton("download_final_screening_data", "Download Final Screening Data")
+                                                         verbatimTextOutput("checked_rows"))
                                       ),
                                       shiny::mainPanel(
                                         shiny::tabsetPanel(id = "screening_panel",
@@ -63,18 +60,18 @@ ui <-
                                                                     p(),
                                                                     DT::dataTableOutput("screen_table_for_screening"),
                                                                     value = 1
-                                                                    ),
+                                                           ),
                                                            tabPanel("HIV Positive Patients",
                                                                     p(),
                                                                     DT::dataTableOutput("screen_hivpos_table_for_screening"),
                                                                     value = 2
-                                                                    ),
-                                                           tabPanel("Final Screening Data",
+                                                           ),
+                                                           tabPanel("HIV Negative Patients",
                                                                     p(),
-                                                                    DT::dataTableOutput("final_screening_table"),
+                                                                    DT::dataTableOutput("screen_hivneg_table_for_screening"),
                                                                     value = 3
                                                            )
-                                                           )
+                                        )
                                       )
                                     )
                     ),
@@ -117,34 +114,34 @@ ui <-
                                                                                                                    "Vietnamese",
                                                                                                                    "White"), selected = NULL, multiple = T),
                                                                   selectizeInput("match_gender","Gender:", choices = c("Male", "Female"), selected = NULL, multiple = T)
-                                                                  ),
+                                                           ),
                                                            column(6,
                                                                   numericInput("age_range","+/- years:", value = 5, min = 1, step = 1),
                                                                   selectizeInput("match_ethnicity","Ethnicity:", choices = c("Spanish; Hispanic", "Non-Spanish; non-Hispanic"), selected = NULL, multiple = T),
-                                                                  selectizeInput("match_vtype","Visit Type:", choices = c("NP", "NEP"), selected = NULL, multiple = T)
-                                                                  )
+                                                                  selectizeInput("match_vtype","Visit Type:", choices = c("EP", "NEP"), selected = NULL, multiple = T)
+                                                           )
                                                          ),
                                                          bslib::accordion(id = "term_filters", open = FALSE,
-                                                           bslib::accordion_panel("Term Filters",
-                                                                                  selectizeInput("key_term_daig_in", "Include Diagnosis Key Term", choices = NULL,
-                                                                                                 multiple = TRUE,options = list(create = TRUE)),
-                                                                                  selectizeInput("key_term_daig_ex", "Exclude Diagnosis Key Term", choices = NULL,
-                                                                                                 multiple = TRUE,options = list(create = TRUE)),
-                                                                                  selectizeInput("key_term_notes_in", "Include Notes Key Term", choices = NULL,
-                                                                                                 multiple = TRUE,options = list(create = TRUE)),
-                                                                                  selectizeInput("key_term_notes_ex", "Exclude Notes Key Term", choices = NULL,
-                                                                                                 multiple = TRUE,options = list(create = TRUE))
-                                                                                  )
-                                                           ),
+                                                                          bslib::accordion_panel("Term Filters",
+                                                                                                 selectizeInput("key_term_daig_in", "Include Diagnosis Key Term", choices = NULL,
+                                                                                                                multiple = TRUE,options = list(create = TRUE)),
+                                                                                                 selectizeInput("key_term_daig_ex", "Exclude Diagnosis Key Term", choices = NULL,
+                                                                                                                multiple = TRUE,options = list(create = TRUE)),
+                                                                                                 selectizeInput("key_term_notes_in", "Include Notes Key Term", choices = NULL,
+                                                                                                                multiple = TRUE,options = list(create = TRUE)),
+                                                                                                 selectizeInput("key_term_notes_ex", "Exclude Notes Key Term", choices = NULL,
+                                                                                                                multiple = TRUE,options = list(create = TRUE))
+                                                                          )
+                                                         ),
                                                          p(),
                                                          dateRangeInput("match_diag_data_range","Diagnosis Date Range:"),
                                                          hr(),
                                                          actionButton("SavePatientMatch","Save Match", width = "100%")
-                                                         ),
+                                        ),
                                         conditionalPanel(condition = "input.matching_panel == '2'",
                                                          downloadButton("dnlnd_data","Export data")
                                                          # Exporting data
-                                                         )
+                                        )
                                       ),
                                       shiny::mainPanel(
                                         shiny::tabsetPanel(id = "matching_panel",
@@ -157,26 +154,26 @@ ui <-
                                                                     #reactableOutput("HIV_Neg_table_for_matching"),
                                                                     DT::dataTableOutput("HIV_Neg_table_for_matching"),
                                                                     value = 1
-                                                                    ),
+                                                           ),
                                                            tabPanel("Review Matches",
                                                                     p(),
                                                                     fluidRow(
                                                                       column(6,
                                                                              h3(tags$b("HIV Positive Patients",style = "font-size: 20px;")),
                                                                              DT::dataTableOutput("HIV_Pos_table_match_review")
-                                                                             ),
+                                                                      ),
                                                                       column(6,
                                                                              h3(tags$b("HIV Negative Patients",style = "font-size: 20px;")),
                                                                              DT::dataTableOutput("HIV_Neg_table_match_review")
-                                                                             )
+                                                                      )
                                                                     ),
                                                                     value = 2
-                                                                    )
                                                            )
+                                        )
                                       )
                                     )
                     ),
-
+                    
                     ## Homepage ------------------------------------------------
                     shiny::tabPanel("About",
                                     # Explain SMART acronym what it can be used for - any logos
@@ -189,16 +186,10 @@ ui <-
 # Server -----------------------------------------------------------------------
 
 server <- function(input, output, session) {
-  
-  options(shiny.maxRequestSize=30*1024^2) # increase upload file size limit from 5MB to 30MB
-  
-  source("module_screening_processing.R")
+  options(shiny.maxRequestSize = 100*1024^2)  # Set to 100MB
   
   ## Reactive Vals -------------------------------------------------------------
-  hivneg_file <- reactiveVal(NULL)
   backend_known_hivneg_file <- reactiveVal(NULL)
-  backend_hivneg_df <- reactiveVal(NULL)
-  
   observe({
     if (file.exists(Known_HIVNEG_File)) {
       backend_known_hivneg_file(Known_HIVNEG_File)
@@ -206,14 +197,12 @@ server <- function(input, output, session) {
       backend_known_hivneg_file(NULL)
     }
   })
-
+  backend_hivneg_df <- reactiveVal(NULL)
+  
   screen_file <- reactiveVal(NULL)
   screen_df <- reactiveVal(NULL)
   screen_df_hivpos <- reactiveVal(NULL)
   screen_df_hivneg <- reactiveVal(NULL)
-  
-  redcap_file <- reactiveVal(NULL)
-  redcap_df <- reactiveVal(NULL)
   
   match_file <- reactiveVal()
   match_df <- reactiveVal()
@@ -226,46 +215,19 @@ server <- function(input, output, session) {
   comment_df <- reactiveVal(NULL)
   comment_file <- reactiveVal(NULL)
   
-  raw_screening_df <- reactiveVal(NULL)
-  final_screening_df <- reactiveVal(NULL)
-  final_screen_data <- reactiveVal(NULL)
-  
-  ## HIV-negative upload ----
-  observeEvent(input$known_neg_file_upload, {
-    req(input$known_neg_file_upload$datapath)
-    file <- input$known_neg_file_upload$datapath
-    ext  <- tolower(tools::file_ext(file))
-    message("HIVNEG path: ", file, " (.", ext, ")")
-    
-    # read the file
-    df <- switch(
-      ext,
-      "csv"  = readr::read_csv(file, show_col_types = FALSE) |> as.data.frame(),
-      "xlsx" = readxl::read_excel(file, sheet = 1, .name_repair = "minimal") |> as.data.frame(),
-      "xls"  = readxl::read_excel(file, sheet = 1, .name_repair = "minimal") |> as.data.frame(),
-      {
-        showNotification("HIV-negative file must be CSV/XLS/XLSX.", type = "error")
-        return(invisible(NULL))
-      }
-    )
-    
-    # require an MRN column
-    if (!"MRN" %in% names(df)) {
-      showNotification("HIV-negative file: column 'MRN' not found.", type = "error")
-      backend_hivneg_df(NULL)
-      return(invisible(NULL))
+  # Read in known HIV Neg file
+  observe({
+    req(backend_known_hivneg_file())
+    file <- backend_known_hivneg_file()
+    ext <- tools::file_ext(file)
+    if (ext == "csv") {
+      df <- as.data.frame(readr::read_csv(file)) # might need to update depending on input format
+      backend_hivneg_df(df)
+    } else if (ext %in% c("xlsx","xls")) {
+      df <- as.data.frame(readxl::excel_sheets(file))
+      backend_hivneg_df(df)
     }
-    
-    df_clean <- df |>
-      dplyr::transmute(MRN = as.character(.data$MRN)) |>
-      dplyr::filter(!is.na(MRN) & MRN != "") |>
-      dplyr::distinct()
-    
-    backend_hivneg_df(df_clean)
-    message("HIVNEG rows loaded: ", nrow(df_clean))
   })
-  
-  
   
   ## Homepage ------------------------------------------------------------------
   
@@ -283,13 +245,13 @@ server <- function(input, output, session) {
     file <- screen_file()
     ext <- tools::file_ext(file)
     if (ext == "csv") {
-      df <- as.data.frame(readr::read_csv(file, skip = 2)) # might need to update depending on input format
+      df <- as.data.frame(readr::read_csv(file, skip = 3)) # might need to update depending on input format
       #df <- df %>%
       #  filter(STATUS %in% c("CONFIRMED", "RESCHEDULED"))
-      raw_screening_df(df)
+      screen_df(df)
     } else if (ext %in% c("xlsx","xls")) {
-      df <- as.data.frame(readxl::read_excel(file, skip = 2,sheet = "Details")) # add skip row number input? or predict?
-      raw_screening_df(df)
+      df <- as.data.frame(readxl::read_excel(file, skip = 2)) # add skip row number input? or predict?
+      screen_df(df)
     }
     mrn_col_pred <- grep("mrn",colnames(df),ignore.case = T, value = T)[1]
     hiv_col_pred <- grep("hiv",colnames(df),ignore.case = T, value = T)[1]
@@ -302,8 +264,8 @@ server <- function(input, output, session) {
   screen_columns_id <- reactiveVal(list())
   
   observe({
-    req(raw_screening_df())
-    df <- raw_screening_df()
+    req(screen_df())
+    df <- screen_df()
     location_col_pred <- grep("location",colnames(df),ignore.case = T, value = T)[1]
     appt_col_pred <- grep("APPTDTTM|appointment",colnames(df),ignore.case = T, value = T)[1]
     age_col_pred <- grep("age",colnames(df),ignore.case = T, value = T)
@@ -334,10 +296,10 @@ server <- function(input, output, session) {
   })
   
   screen_df_hivpos <- reactive({
-    req(raw_screening_df())
+    req(screen_df())
     req(input$hiv_present_column)
     req(input$mrn_column)
-    df <- raw_screening_df()
+    df <- screen_df()
     hiv_col_pred <- input$hiv_present_column
     known_hivneg <- backend_hivneg_df()
     mrn_col <- input$mrn_column
@@ -351,10 +313,10 @@ server <- function(input, output, session) {
     df_pos
   })
   screen_df_hivneg <- reactive({
-    req(raw_screening_df())
+    req(screen_df())
     req(input$hiv_present_column)
     req(input$mrn_column)
-    df <- raw_screening_df()
+    df <- screen_df()
     hiv_col_pred <- input$hiv_present_column
     known_hivneg <- backend_hivneg_df()
     mrn_col <- input$mrn_column
@@ -370,89 +332,12 @@ server <- function(input, output, session) {
     df_neg
   })
   
-  ## read in redcap file
-  observe({
-    req(input$redcap_file_upload$datapath)
-    redcap_file(input$redcap_file_upload$datapath)
-  })
-  
-  observe({
-    req(redcap_file())
-    file <- redcap_file()
-    ext <- tools::file_ext(file)
-    if (ext == "csv") {
-      df <- read.csv(file)
-      redcap_df(df)
-    } else {
-      showNotification("REDCap file must be a CSV.", type = "error")
-    }
-  })
-  
-  final_screen_data <- reactive({
-    req(raw_screening_df())         
-    req(redcap_df())
-    
-    tryCatch({
-      process_screening_data(
-        details  = raw_screening_df(),
-        known_hiv_neg       = backend_hivneg_df(),
-        redcap       = redcap_df()
-      )
-    }, error = function(e) {
-      showNotification(paste("Error in processing:", e$message), type = "error")
-      NULL
-    })
-  })
-  
-  observeEvent(backend_hivneg_df(), {
-    cat("HIVNEG rows now:", if (is.null(backend_hivneg_df())) 0 else nrow(backend_hivneg_df()), "\n")
-  })
-  # For trouble shooting
-  # observeEvent(final_screen_data(), {
-  #   df <- final_screen_data()
-  #   message("Final rows: ", if (is.null(df)) "NULL" else nrow(df))
-  #   if (!is.null(df)) message("Final cols: ", ncol(df))
-  # })
-  
-  output$download_final_screening_data <- downloadHandler(
-    filename = function() paste0("final_screening_data_", Sys.Date(), ".csv"),
-    content  = function(file) {
-      df <- final_screen_data()
-      validate(need(!is.null(df), "No final screening data to download."))
-      write.csv(df, file, row.names = FALSE)
-    }
-  )
-  
-  # For trouble shooting
-  # observe({
-  #   cat("raw:", !is.null(raw_screening_df()),
-  #       " hivneg:", !is.null(backend_hivneg_df()),
-  #       " redcap:", !is.null(redcap_df()), "\n")
-  # })
-  # observeEvent(final_screen_data(), {
-  #   cat("Final screening nrows:", NROW(final_screen_data()), "\n")
-  # })
-  
-  observeEvent(final_screening_df(), {
-    showNotification("Final screening data is ready!", type = "message")
-  })
-  
-  
   # tags$style(HTML('table.dataTable tr.selected td, table.dataTable td.selected {background-color: pink !important;}'))
-  
-  
-  observe({
-    if (!is.null(final_screening_df())) {
-      print(head(final_screening_df()))
-    } else {
-      print("final_screening_df is NULL")
-    }
-  })
   
   # Display input file
   output$screen_table_for_screening <- DT::renderDataTable({
-    req(raw_screening_df())
-    df <- raw_screening_df()
+    req(screen_df())
+    df <- screen_df()
     DT::datatable(df,
                   escape = F,
                   class = "display nowrap",
@@ -476,8 +361,7 @@ server <- function(input, output, session) {
     DT::datatable(df,
                   escape = F,
                   class = "display nowrap",
-                  extensions = c('ColReorder', "Select"), 
-                  selection = "none",
+                  extensions = c('ColReorder', "Select"), #selection = "none",
                   options = list(
                     lengthMenu = c(5, 10, 20, 100, 1000),
                     pageLength = 20,
@@ -495,25 +379,22 @@ server <- function(input, output, session) {
                   rownames = F
     )
   })
-  
-  output$final_screening_table <- DT::renderDataTable({
-    df <- final_screen_data()
-    validate(need(!is.null(df), "Upload screening data (and optional HIV-neg/REDCap) to see results."))
-    
-    DT::datatable(
-      df,
-      escape = FALSE,
-      class = "display nowrap",
-      extensions = "ColReorder",
-      options = list(
-        pageLength = 25,
-        scrollX   = TRUE,
-        colReorder = TRUE,
-        select = list(style = "os", items = "cell")  # cell selection
-      )
+  # Display input hiv negative file
+  output$screen_hivneg_table_for_screening <- DT::renderDataTable({
+    req(screen_df_hivneg())
+    df <- screen_df_hivneg()
+    DT::datatable(df,
+                  escape = F,
+                  class = "display nowrap",
+                  extensions = 'ColReorder',
+                  options = list(lengthMenu = c(5, 10, 20, 100, 1000),
+                                 pageLength = 20,
+                                 scrollX = T,
+                                 target = "cell",
+                                 colReorder = TRUE),
+                  rownames = F
     )
   })
-  
   
   ## Update HIV Neg list with new negatives - from filters to be added
   #new_neg_df <- reactive({
@@ -584,12 +465,12 @@ server <- function(input, output, session) {
     req(match_df(), match_columns_id())
     df <- match_df()
     match_col_id <- match_columns_id()
-
+    
     if (isTruthy(input$hivpos_pat_to_match) & isTruthy(screen_columns_id()) & isTruthy(HIV_pos_df_patient_to_match())) {
       patient_data <- HIV_pos_df_patient_to_match()
       patient_mrn <- input$hivpos_pat_to_match
       screen_col_id <- screen_columns_id()
-
+      
       clinic_pred <- patient_data[1,screen_col_id[["clinic_col"]]]
       age_pred <- patient_data[1,screen_col_id[["age_col"]]]
       race_pred <- patient_data[1,screen_col_id[["race_col"]]]
@@ -696,7 +577,7 @@ server <- function(input, output, session) {
                   rownames = F
     )
   })
-
+  
   HIV_neg_df_filtered_to_match <- reactive({
     req(match_df(), patient_filter_settings(), match_columns_id())
     
@@ -773,7 +654,7 @@ server <- function(input, output, session) {
     return(df_filtered)
   })
   
-    output$filtered_table <- renderReactable({
+  output$filtered_table <- renderReactable({
     req(HIV_neg_df_filtered_to_match())
     df <- HIV_neg_df_filtered_to_match()
     
@@ -817,17 +698,17 @@ server <- function(input, output, session) {
     req(HIV_neg_df_filtered_to_match())  # Use the filtered dataset
     df <- HIV_neg_df_filtered_to_match()
     print(paste("Final dataset rows:", nrow(df)))  # Debugging
-   DT::datatable(df,
-                 escape = F,
-                 class = "display nowrap",
-                 extensions = 'ColReorder',
-                 options = list(lengthMenu = c(5, 10, 20, 100, 1000),
-                                pageLength = 20,
-                                scrollX = T,
-                                target = "cell",
-                                colReorder = TRUE),
-                 rownames = F
-   )
+    DT::datatable(df,
+                  escape = F,
+                  class = "display nowrap",
+                  extensions = 'ColReorder',
+                  options = list(lengthMenu = c(5, 10, 20, 100, 1000),
+                                 pageLength = 20,
+                                 scrollX = T,
+                                 target = "cell",
+                                 colReorder = TRUE),
+                  rownames = F
+    )
   })
   
   
@@ -867,7 +748,7 @@ server <- function(input, output, session) {
                   rownames = F
     )
   })
-
+  
 }
 
 
